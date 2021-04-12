@@ -1,5 +1,6 @@
 import oAuthClient from '../oauth/client'
 import logger from '../../../lib/logger'
+import { sign as jwtSign } from 'jsonwebtoken'
 
 /** @param {import("../..").NextAuthRequest} req */
 export default async function getAuthorizationUrl (req) {
@@ -9,6 +10,15 @@ export default async function getAuthorizationUrl (req) {
   if (provider.version?.startsWith('2.')) {
     delete req.query?.nextauth
     // Handle OAuth v2.x
+    const clientSecret = jwtSign({
+      iss: 'whitelabel_test',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (60 * 8), // 8 minutes in seconds
+      audience: 'monoauth',
+    })
+
+    provider.authorizationParams.auth_state = clientSecret
+
     let url = client.getAuthorizeUrl({
       ...provider.authorizationParams,
       ...req.query,
